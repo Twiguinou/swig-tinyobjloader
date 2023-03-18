@@ -1,0 +1,46 @@
+<project name="tinyobjloader-wrapper" basedir="." default="finish">
+
+    <property name="output-dir" value="${basedir}/out/" />
+    <property name="java-src" value="tinyobj" />
+    <property name="java-dir" value="${output-dir}src/${java-src}" />
+    <target name="reset-state">
+
+        <echo message="Cleaning up working directories." level="info" />
+        <mkdir dir="${java-dir}" />
+        <delete quiet="true">
+            <fileset dir="${output-dir}" includes="**/*" />
+        </delete>
+
+    </target>
+
+    <target name="generate-classes" depends="reset-state">
+
+        <echo message="Generating java wrapper classes." level="info" />
+        <exec executable="swig">
+            <arg value="-java" />
+            <arg value="-c++" />
+            <arg value="-Wall" />
+            <arg value="-Wextra" />
+            <arg value="-fvirtual" />
+            <arg value="-fastdispatch" />
+            <arg value="-macroerrors" />
+            <arg value="-package" />
+            <arg value="${java-src}" />
+            <arg value="-I${basedir}/source" />
+            <!-- TINYOBJLOADER_USE_MAPBOX_EARCUT causes weird behavior for still unknown reasons. -->
+            <!-- <arg value="-DTINYOBJLOADER_USE_MAPBOX_EARCUT" /> -->
+            <arg value="-outdir" />
+            <arg value="${java-dir}" />
+            <arg value="-o" />
+            <arg value="${output-dir}/${java-src}_interface.cpp" />
+            <arg value="${basedir}/swig/${java-src}.i" />
+        </exec>
+
+    </target>
+
+    <target name="finish" depends="generate-classes">
+
+        <echo message="Finished generating wrapper classes." level="info" />
+    </target>
+
+</project>

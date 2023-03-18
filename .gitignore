@@ -1,0 +1,6 @@
+.idea
+out
+*.iml
+native-out
+temp_lnk
+source/.vs

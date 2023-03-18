@@ -1,0 +1,96 @@
+<project name="compile-windows32" basedir="." default="callback">
+
+    <property environment="env" />
+    <property name="module-name" value="windows32" />
+    <property name="link-dest" value="temp_lnk/${module-name}" />
+    <property name="compiled-dest" value="native-out/${module-name}" />
+    <property name="shared-library" value="tinyobjloader-${module-name}.dll" />
+    <property name="jni-headers.default" value="jinclude" />
+    <property name="jni-headers.spec" value="${jni-headers.default}/win32" />
+    <property name="g++" value="i686-w64-mingw32-g++" />
+    <property name="stripper" value="i686-w64-mingw32-strip" />
+    <target name="reset-state">
+
+        <echo message="Cleaning up working directories." level="info" />
+        <mkdir dir="${link-dest}" />
+        <mkdir dir="${compiled-dest}" />
+        <delete quiet="true">
+            <fileset dir="${link-dest}" includes="**/*" />
+            <fileset dir="${compiled-dest}" includes="**/*" />
+        </delete>
+
+    </target>
+
+    <target name="compile" depends="reset-state">
+
+        <mkdir dir="${link-dest}/out/" />
+        <mkdir dir="${link-dest}/source/" />
+        <apply executable="${g++}" failonerror="true" dest="${link-dest}">
+            <arg value="-c" />
+            <arg value="-Wall" />
+            <arg value="-O2" />
+            <arg value="-mfpmath=sse" />
+            <arg value="-msse2" />
+            <arg value="-fmessage-length=0" />
+            <arg value="-m32" />
+            <!-- TINYOBJLOADER_USE_MAPBOX_EARCUT causes weird behavior for still unknown reasons. -->
+            <!-- <arg value="-DTINYOBJLOADER_USE_MAPBOX_EARCUT" /> -->
+            <arg value="-fno-strict-aliasing" />
+            <arg value="-fno-rtti" />
+            <arg value="-I${jni-headers.default}" />
+            <arg value="-I${jni-headers.spec}" />
+            <arg value="-Iout/" />
+            <arg value="-Isource/" />
+            <arg value="-Isource/mapbox/" />
+            <srcfile />
+            <arg value="-o" />
+            <targetfile />
+            <fileset dir="./">
+                <include name="out/tinyobj_interface.cpp" />
+                <include name="source/tiny_obj_loader.cc" />
+            </fileset>
+
+            <compositemapper>
+                <mapper type="glob" from="*.cpp" to="*.o"/>
+                <mapper type="glob" from="*.cc" to="*.o"/>
+            </compositemapper>
+
+        </apply>
+
+        <fileset dir="${link-dest}" id="objects">
+            <patternset>
+                <include name="**/*.o" />
+            </patternset>
+        </fileset>
+
+        <pathconvert pathsep=" " property="object" refid="objects" />
+        <mkdir dir="${compiled-dest}" />
+        <exec executable="${g++}" failonerror="true" dir="${link-dest}">
+            <arg value="-Wl,--kill-at" />
+            <arg value="-shared" />
+            <arg value="-static" />
+            <arg value="-static-libgcc" />
+            <arg value="-static-libstdc++" />
+            <arg value="-m32" />
+            <arg value="-o" />
+            <arg path="${compiled-dest}/${shared-library}" />
+            <arg line="${object}" />
+        </exec>
+
+    </target>
+
+    <target name="strip-lib" depends="compile">
+
+        <exec executable="${stripper}" dir="${link-dest}">
+            <arg value="--strip-unneeded" />
+            <arg path="${compiled-dest}/${shared-library}" />
+        </exec>
+
+    </target>
+
+    <target name="callback" depends="strip-lib">
+
+        <echo message="Successfully compiled library for module : ${module-name}" level="info" />
+    </target>
+
+</project>
